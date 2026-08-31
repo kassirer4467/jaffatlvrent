@@ -146,7 +146,7 @@
 <div class="hero">
   <div class="hero-inner">
     <p class="eyebrow">A quiet stone house on the edge of the olive groves</p>
-    <h1>The Olive House</h1>
+    <h1>Entire rental unit in Tel Aviv-Yafo</h1>
     <p>One private house, one garden, one guest at a time. Pick your dates below and send a request directly — no accounts, no payment, just a message.</p>
     <div class="hero-facts">
       <div><strong>1</strong><span>Whole house</span></div>
@@ -425,12 +425,12 @@ function renderSummary(){
   document.getElementById('total').textContent = `${CURRENCY}${total}`;
 
   const dateList = keys.map(k=>fmtNice(new Date(k))).join(', ');
-  const message = `Hi! I'd like to request the following dates at The Olive House:\n${dateList}\n\nTotal for ${nights} night(s) after discount: ${CURRENCY}${total}.\nCould you confirm availability?`;
+  const message = `Hi! I'd like to request the following dates at Entire rental unit in Tel Aviv-Yafo:\n${dateList}\n\nTotal for ${nights} night(s) after discount: ${CURRENCY}${total}.\nCould you confirm availability?`;
 
   document.getElementById('sendWhatsapp').href =
     `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(message)}`;
   document.getElementById('sendEmail').href =
-    `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('Booking request — The Olive House')}&body=${encodeURIComponent(message)}`;
+    `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('Booking request — Entire rental unit in Tel Aviv-Yafo')}&body=${encodeURIComponent(message)}`;
 }
 
 document.getElementById('prevMonth').addEventListener('click', ()=>{
