@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Olive House — Stay & Book</title>
+<style>
+  :root{
+    --stone: #EDE7D9;
+    --paper: #F7F4EC;
+    --pine: #2B3A2E;
+    --pine-dark: #1B2620;
+    --brass: #B8863C;
+    --brick: #9C4A34;
+    --line: #D9D0BB;
+    --font-display: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --font-body: "Avenir Next", "Segoe UI", -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--pine-dark); font-family:var(--font-body); line-height:1.5;}
+  a{color:inherit;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    background: linear-gradient(160deg, var(--pine) 0%, var(--pine-dark) 100%);
+    color: var(--stone);
+    padding: 5rem 1.5rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after{
+    content:"";
+    position:absolute; right:-6rem; top:-6rem;
+    width:22rem; height:22rem; border-radius:50%;
+    background: radial-gradient(circle, rgba(184,134,60,0.25), transparent 70%);
+  }
+  .hero-inner{max-width: 900px; margin: 0 auto; position:relative;}
+  .eyebrow{ font-size:0.95rem; letter-spacing:0.02em; color:var(--brass); margin:0 0 0.75rem;}
+  .hero h1{
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    margin: 0 0 1rem;
+    max-width: 14ch;
+    line-height:1.05;
+  }
+  .hero p{max-width:56ch; font-size:1.1rem; color:#DDD9C8;}
+  .hero-facts{display:flex; gap:2rem; margin-top:2rem; flex-wrap:wrap;}
+  .hero-facts div{border-left:2px solid var(--brass); padding-left:0.75rem;}
+  .hero-facts strong{display:block; font-size:1.3rem; font-family:var(--font-display);}
+  .hero-facts span{font-size:0.85rem; color:#C9C4AF;}
+
+  /* ---------- SECTION SHELL ---------- */
+  section{max-width:900px; margin:0 auto; padding:3.5rem 1.5rem;}
+  h2{font-family:var(--font-display); font-size:1.8rem; margin:0 0 1rem;}
+  .about p{max-width:64ch; font-size:1.05rem;}
+  .amenities{display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:0.75rem 1.5rem; padding:0; list-style:none; margin-top:1.5rem;}
+  .amenities li{padding-left:1.2rem; position:relative; font-size:0.98rem;}
+  .amenities li::before{content:"—"; position:absolute; left:0; color:var(--brass);}
+
+  /* ---------- CALENDAR ---------- */
+  .booking{background:var(--stone);}
+  .booking-grid{display:grid; grid-template-columns: 1.3fr 1fr; gap:2.5rem; align-items:start;}
+  @media (max-width:720px){ .booking-grid{grid-template-columns:1fr;} }
+
+  .cal-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;}
+  .cal-nav button{
+    background:none; border:1px solid var(--pine); color:var(--pine);
+    border-radius:50%; width:2.1rem; height:2.1rem; font-size:1rem; cursor:pointer;
+  }
+  .cal-nav button:hover{background:var(--pine); color:var(--stone);}
+  .cal-title{font-family:var(--font-display); font-size:1.25rem;}
+
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .cal-dow{text-align:center; font-size:0.75rem; color:#6b6b5c; padding-bottom:4px;}
+  .cal-day{
+    aspect-ratio:1/1; border-radius:10px; border:1px solid var(--line);
+    background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; font-size:0.85rem; padding:2px; user-select:none;
+  }
+  .cal-day .price{font-size:0.68rem; color:#6b6b5c; margin-top:2px;}
+  .cal-day.empty{visibility:hidden;}
+  .cal-day.unavailable{background:#F1EEE4; color:#B7B29E; cursor:not-allowed; text-decoration:line-through;}
+  .cal-day.unavailable .price{visibility:hidden;}
+  .cal-day.selected{background:var(--pine); border-color:var(--pine); color:#fff;}
+  .cal-day.selected .price{color:#DCE4D9;}
+  .cal-day.today{border-color:var(--brass); border-width:2px;}
+  .legend{display:flex; gap:1.2rem; margin-top:1rem; font-size:0.8rem; color:#6b6b5c; flex-wrap:wrap;}
+  .legend span{display:inline-flex; align-items:center; gap:0.4rem;}
+  .dot{width:10px; height:10px; border-radius:3px; display:inline-block;}
+
+  /* ---------- SUMMARY PANEL ---------- */
+  .summary{
+    background:#fff; border-radius:14px; padding:1.75rem; border:1px solid var(--line);
+    position:sticky; top:1.5rem;
+  }
+  .summary h3{font-family:var(--font-display); margin-top:0; font-size:1.3rem;}
+  .summary .empty-note{color:#6b6b5c; font-size:0.92rem;}
+  .summary-list{list-style:none; padding:0; margin:0.75rem 0; max-height:180px; overflow-y:auto;}
+  .summary-list li{display:flex; justify-content:space-between; font-size:0.9rem; padding:0.3rem 0; border-bottom:1px dashed var(--line);}
+  .summary-row{display:flex; justify-content:space-between; font-size:0.95rem; margin-top:0.6rem;}
+  .summary-row.total{font-size:1.15rem; font-weight:600; border-top:1px solid var(--line); padding-top:0.75rem; margin-top:0.75rem;}
+  .discount-note{font-size:0.82rem; color:var(--brick); margin-top:0.3rem;}
+  .send-buttons{display:flex; flex-direction:column; gap:0.6rem; margin-top:1.25rem;}
+  .btn{
+    display:block; text-align:center; padding:0.8rem 1rem; border-radius:8px;
+    text-decoration:none; font-size:0.95rem; font-weight:600; cursor:pointer; border:none;
+  }
+  .btn-whatsapp{background:#2B3A2E; color:#fff;}
+  .btn-email{background:#fff; color:var(--pine); border:1.5px solid var(--pine);}
+  .btn:hover{opacity:0.9;}
+  .btn[disabled]{opacity:0.4; pointer-events:none;}
+
+  footer{text-align:center; padding:2.5rem 1.5rem; color:#6b6b5c; font-size:0.85rem;}
+
+  /* ---------- GALLERY ---------- */
+  .gallery-grid{
+    display:grid; grid-template-columns:repeat(4, 1fr); grid-auto-rows:130px; gap:8px; margin-top:1.25rem;
+  }
+  .gallery-grid img{
+    width:100%; height:100%; object-fit:cover; border-radius:10px; cursor:pointer; display:block;
+    transition:opacity 0.15s;
+  }
+  .gallery-grid img:hover{opacity:0.88;}
+  .gallery-grid a:first-child img{grid-column:span 2; grid-row:span 2;}
+  .gallery-grid a:nth-child(1), .gallery-grid a{ height:100%; }
+  @media (max-width:600px){
+    .gallery-grid{grid-template-columns:repeat(2,1fr); grid-auto-rows:110px;}
+    .gallery-grid a:first-child img{grid-column:span 2; grid-row:span 1;}
+  }
+  .lightbox{
+    display:none; position:fixed; inset:0; background:rgba(20,24,18,0.92);
+    align-items:center; justify-content:center; z-index:50; padding:2rem;
+  }
+  .lightbox.open{display:flex;}
+  .lightbox img{max-width:100%; max-height:100%; border-radius:6px;}
+  .lightbox-close{
+    position:absolute; top:1.5rem; right:1.8rem; color:#fff; font-size:2rem;
+    background:none; border:none; cursor:pointer; line-height:1;
+  }
+
+  .loading-note{color:#6b6b5c; font-size:0.9rem; padding:1rem 0;}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">A quiet stone house on the edge of the olive groves</p>
+    <h1>The Olive House</h1>
+    <p>One private house, one garden, one guest at a time. Pick your dates below and send a request directly — no accounts, no payment, just a message.</p>
+    <div class="hero-facts">
+      <div><strong>1</strong><span>Whole house</span></div>
+      <div><strong>4</strong><span>Guests max</span></div>
+      <div><strong>2</strong><span>Bedrooms</span></div>
+      <div><strong>Kfar Something</strong><span>Location</span></div>
+    </div>
+  </div>
+</div>
+
+<section class="gallery">
+  <h2>Photos</h2>
+  <p style="color:#5b5b4d;">Replace the file names below with your own photos — put the image files in the same folder as this page.</p>
+  <div class="gallery-grid" id="galleryGrid">
+    <!-- Add / remove <a> entries freely. First one is shown large. -->
+    <a href="#" data-full="photo-1.jpg"><img src="photo-1.jpg" alt="Living room" onerror="this.closest('a').style.display='none'"></a>
+    <a href="#" data-full="photo-2.jpg"><img src="photo-2.jpg" alt="Bedroom" onerror="this.closest('a').style.display='none'"></a>
+    <a href="#" data-full="photo-3.jpg"><img src="photo-3.jpg" alt="Kitchen" onerror="this.closest('a').style.display='none'"></a>
+    <a href="#" data-full="photo-4.jpg"><img src="photo-4.jpg" alt="Garden" onerror="this.closest('a').style.display='none'"></a>
+    <a href="#" data-full="photo-5.jpg"><img src="photo-5.jpg" alt="Exterior" onerror="this.closest('a').style.display='none'"></a>
+  </div>
+</section>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose">&times;</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<section class="about">
+  <h2>About the house</h2>
+  <p>Replace this paragraph with your own description: the feel of the house, the view from the porch, what a morning there looks like. A few honest sentences work better than a long list of adjectives.</p>
+  <ul class="amenities">
+    <li>Private garden</li>
+    <li>Fast Wi-Fi</li>
+    <li>Fully equipped kitchen</li>
+    <li>Free parking</li>
+    <li>Air conditioning</li>
+    <li>Washing machine</li>
+  </ul>
+</section>
+
+<section class="booking">
+  <h2>Check availability & price</h2>
+  <p style="color:#5b5b4d; max-width:56ch;">Click on the dates you'd like to stay. Prices are shown per night; a longer stay unlocks a discount automatically.</p>
+
+  <div class="booking-grid">
+    <div>
+      <div class="cal-nav">
+        <button id="prevMonth">&#8592;</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button id="nextMonth">&#8594;</button>
+      </div>
+      <div class="cal-grid" id="dowRow"></div>
+      <div class="cal-grid" id="calGrid" style="margin-top:6px;"></div>
+      <div class="legend">
+        <span><span class="dot" style="background:#fff;border:1px solid var(--line);"></span>Available</span>
+        <span><span class="dot" style="background:var(--pine);"></span>Selected</span>
+        <span><span class="dot" style="background:#F1EEE4;"></span>Unavailable</span>
+      </div>
+    </div>
+
+    <div class="summary">
+      <h3>Your request</h3>
+      <div id="summaryEmpty" class="empty-note">Select one or more dates on the calendar to see the price.</div>
+      <div id="summaryContent" style="display:none;">
+        <ul class="summary-list" id="summaryList"></ul>
+        <div class="summary-row"><span id="nightsLabel">0 nights</span><span id="subtotal">₪0</span></div>
+        <div class="discount-note" id="discountNote" style="display:none;"></div>
+        <div class="summary-row total"><span>Total</span><span id="total">₪0</span></div>
+        <div class="send-buttons">
+          <a class="btn btn-whatsapp" id="sendWhatsapp" target="_blank">Send request via WhatsApp</a>
+          <a class="btn btn-email" id="sendEmail">Send request via email</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Questions before you request dates? Reach out directly — see the buttons above once you've picked your dates.
+</footer>
+
+<script>
+/* =========================================================================
+   EDIT THESE SETTINGS — everything an owner needs to change lives here.
+   ========================================================================= */
+const OWNER_WHATSAPP = "972500000000";      // country code + number, no + or spaces
+const OWNER_EMAIL     = "owner@example.com";
+const CURRENCY        = "₪";
+
+// Discount tiers: minimum nights -> percent off. Edit freely.
+const DISCOUNT_TIERS = [
+  { minNights: 7, percent: 15 },
+  { minNights: 5, percent: 10 },
+  { minNights: 3, percent: 5  }
+];
+
+// ---- YOUR BACK-OFFICE ----
+// Paste the "publish to web" CSV link of your Google Sheet here.
+// Leave empty ("") to use made-up demo dates instead.
+// Sheet must have 3 columns, one row per date, no header needed to be exact
+// but recommended: date | price | available
+//   2026-09-01 | 420 | TRUE
+//   2026-09-02 | 620 | FALSE
+const GOOGLE_SHEET_CSV_URL = "";
+/* ========================================================================= */
+
+// Demo pricing/availability generator — used only if no sheet URL is set above.
+function buildDemoAvailability(){
+  const data = {};
+  const start = new Date();
+  for(let i=0;i<120;i++){
+    const d = new Date(start);
+    d.setDate(start.getDate()+i);
+    const key = d.toISOString().slice(0,10);
+    const isWeekend = d.getDay()===5 || d.getDay()===6; // Fri/Sat
+    const price = isWeekend ? 620 : 420;
+    const available = Math.random() > 0.18; // ~82% of days open, for demo only
+    data[key] = { price, available };
+  }
+  return data;
+}
+
+function parseCsvToAvailability(csvText){
+  const data = {};
+  const lines = csvText.trim().split(/\r?\n/);
+  lines.forEach(line=>{
+    const parts = line.split(',').map(s=>s.trim());
+    if(parts.length < 3) return;
+    const [dateStr, priceStr, availStr] = parts;
+    const dateMatch = dateStr.match(/^\d{4}-\d{2}-\d{2}$/);
+    if(!dateMatch) return; // skips a header row automatically
+    const price = parseFloat(priceStr);
+    if(isNaN(price)) return;
+    const available = /^true$/i.test(availStr) || availStr === '1';
+    data[dateStr] = { price, available };
+  });
+  return data;
+}
+
+async function loadAvailability(){
+  if(!GOOGLE_SHEET_CSV_URL){
+    return buildDemoAvailability();
+  }
+  try{
+    const res = await fetch(GOOGLE_SHEET_CSV_URL, {cache:'no-store'});
+    if(!res.ok) throw new Error('Sheet fetch failed: '+res.status);
+    const text = await res.text();
+    const parsed = parseCsvToAvailability(text);
+    if(Object.keys(parsed).length === 0) throw new Error('Sheet had no valid rows');
+    return parsed;
+  }catch(err){
+    console.warn('Could not load Google Sheet, falling back to demo data.', err);
+    return buildDemoAvailability();
+  }
+}
+
+let AVAILABILITY = {};
+
+const dowNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+let viewDate = new Date();
+viewDate.setDate(1);
+const selected = new Set();
+
+const dowRow = document.getElementById('dowRow');
+dowNames.forEach(n=>{
+  const el = document.createElement('div');
+  el.className = 'cal-dow';
+  el.textContent = n;
+  dowRow.appendChild(el);
+});
+
+function fmtKey(d){ return d.toISOString().slice(0,10); }
+function fmtNice(d){ return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+
+function renderCalendar(){
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  document.getElementById('calTitle').textContent =
+    viewDate.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+
+  const firstDow = viewDate.getDay();
+  const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 0).getDate();
+  const todayKey = fmtKey(new Date());
+
+  for(let i=0;i<firstDow;i++){
+    const empty = document.createElement('div');
+    empty.className = 'cal-day empty';
+    grid.appendChild(empty);
+  }
+
+  for(let day=1; day<=daysInMonth; day++){
+    const d = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
+    const key = fmtKey(d);
+    const info = AVAILABILITY[key];
+    const cell = document.createElement('div');
+    cell.className = 'cal-day';
+    if(key === todayKey) cell.classList.add('today');
+
+    const num = document.createElement('div');
+    num.textContent = day;
+    cell.appendChild(num);
+
+    if(!info){
+      cell.classList.add('unavailable');
+    } else if(!info.available){
+      cell.classList.add('unavailable');
+      const p = document.createElement('div');
+      p.className='price'; p.textContent = '—';
+      cell.appendChild(p);
+    } else {
+      const p = document.createElement('div');
+      p.className='price'; p.textContent = CURRENCY+info.price;
+      cell.appendChild(p);
+      if(selected.has(key)) cell.classList.add('selected');
+      cell.addEventListener('click', ()=>{
+        if(selected.has(key)) selected.delete(key); else selected.add(key);
+        renderCalendar();
+        renderSummary();
+      });
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function getDiscountPercent(nights){
+  for(const tier of DISCOUNT_TIERS){
+    if(nights >= tier.minNights) return tier.percent;
+  }
+  return 0;
+}
+
+function renderSummary(){
+  const list = document.getElementById('summaryList');
+  const emptyNote = document.getElementById('summaryEmpty');
+  const content = document.getElementById('summaryContent');
+
+  if(selected.size === 0){
+    emptyNote.style.display = 'block';
+    content.style.display = 'none';
+    return;
+  }
+  emptyNote.style.display = 'none';
+  content.style.display = 'block';
+
+  const keys = Array.from(selected).sort();
+  list.innerHTML = '';
+  let subtotal = 0;
+  keys.forEach(key=>{
+    const info = AVAILABILITY[key];
+    subtotal += info.price;
+    const li = document.createElement('li');
+    const d = new Date(key);
+    li.innerHTML = `<span>${fmtNice(d)}</span><span>${CURRENCY}${info.price}</span>`;
+    list.appendChild(li);
+  });
+
+  const nights = keys.length;
+  const percent = getDiscountPercent(nights);
+  const discountAmount = Math.round(subtotal * percent / 100);
+  const total = subtotal - discountAmount;
+
+  document.getElementById('nightsLabel').textContent = `${nights} night${nights>1?'s':''}`;
+  document.getElementById('subtotal').textContent = `${CURRENCY}${subtotal}`;
+
+  const discountNote = document.getElementById('discountNote');
+  if(percent > 0){
+    discountNote.style.display = 'block';
+    discountNote.textContent = `${percent}% multi-night discount applied (−${CURRENCY}${discountAmount})`;
+  } else {
+    discountNote.style.display = 'none';
+  }
+  document.getElementById('total').textContent = `${CURRENCY}${total}`;
+
+  const dateList = keys.map(k=>fmtNice(new Date(k))).join(', ');
+  const message = `Hi! I'd like to request the following dates at The Olive House:\n${dateList}\n\nTotal for ${nights} night(s) after discount: ${CURRENCY}${total}.\nCould you confirm availability?`;
+
+  document.getElementById('sendWhatsapp').href =
+    `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(message)}`;
+  document.getElementById('sendEmail').href =
+    `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('Booking request — The Olive House')}&body=${encodeURIComponent(message)}`;
+}
+
+document.getElementById('prevMonth').addEventListener('click', ()=>{
+  viewDate.setMonth(viewDate.getMonth()-1);
+  renderCalendar();
+});
+document.getElementById('nextMonth').addEventListener('click', ()=>{
+  viewDate.setMonth(viewDate.getMonth()+1);
+  renderCalendar();
+});
+
+document.getElementById('calGrid').innerHTML = '<div class="loading-note">Loading calendar…</div>';
+loadAvailability().then(data=>{
+  AVAILABILITY = data;
+  renderCalendar();
+  renderSummary();
+});
+
+// ---- Photo lightbox ----
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+document.getElementById('galleryGrid').addEventListener('click', (e)=>{
+  const link = e.target.closest('a');
+  if(!link) return;
+  e.preventDefault();
+  lightboxImg.src = link.getAttribute('data-full');
+  lightbox.classList.add('open');
+});
+document.getElementById('lightboxClose').addEventListener('click', ()=> lightbox.classList.remove('open'));
+lightbox.addEventListener('click', (e)=>{ if(e.target === lightbox) lightbox.classList.remove('open'); });
+</script>
+</body>
+</html>
