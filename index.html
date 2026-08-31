@@ -162,7 +162,7 @@
 </div>
 
 <section class="gallery">
- /* --- <h2>Photos</h2> --- */
+  <h2>Photos</h2>
   <div class="gallery-viewer">
     <button class="gallery-arrow left" id="galleryPrev" aria-label="Previous photo">&#8592;</button>
     <img id="galleryMain" alt="Property photo">
@@ -231,8 +231,8 @@
    EDIT THESE SETTINGS — everything an owner needs to change lives here.
    ========================================================================= */
 const OWNER_WHATSAPP = "972500000000";      // country code + number, no + or spaces
-const OWNER_EMAIL     = "kerenb99@gmail.com";
-const CURRENCY        = "$";
+const OWNER_EMAIL     = "owner@example.com";
+const CURRENCY        = "₪";
 
 // Discount tiers: minimum nights -> percent off. Edit freely.
 const DISCOUNT_TIERS = [
@@ -331,13 +331,13 @@ dowNames.forEach(n=>{
 });
 
 function fmtKey(d){ return d.toISOString().slice(0,10); }
-function fmtNice(d){ return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+function fmtNice(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 
 function renderCalendar(){
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '';
   document.getElementById('calTitle').textContent =
-    viewDate.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+    viewDate.toLocaleDateString('en-US',{month:'long', year:'numeric'});
 
   const firstDow = viewDate.getDay();
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 0).getDate();
