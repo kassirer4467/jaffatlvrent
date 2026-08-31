@@ -107,6 +107,7 @@
   }
   .btn-whatsapp{background:#2B3A2E; color:#fff;}
   .btn-email{background:#fff; color:var(--pine); border:1.5px solid var(--pine);}
+  .btn-copy{background:#fff; color:#6b6b5c; border:1.5px dashed var(--line); font-weight:500;}
   .btn:hover{opacity:0.9;}
   .btn[disabled]{opacity:0.4; pointer-events:none;}
 
@@ -216,6 +217,7 @@
         <div class="send-buttons">
           <a class="btn btn-whatsapp" id="sendWhatsapp" target="_blank">Send request via WhatsApp</a>
           <a class="btn btn-email" id="sendEmail">Send request via email</a>
+          <button type="button" class="btn btn-copy" id="copyRequest">Copy request text</button>
         </div>
       </div>
     </div>
@@ -321,6 +323,7 @@ const dowNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 let viewDate = new Date();
 viewDate.setDate(1);
 const selected = new Set();
+let currentMessage = '';
 
 const dowRow = document.getElementById('dowRow');
 dowNames.forEach(n=>{
@@ -434,12 +437,26 @@ function renderSummary(){
 
   const dateList = keys.map(k=>fmtNice(new Date(k))).join(', ');
   const message = `Hi! I'd like to request the following dates at Entire rental unit in Tel Aviv-Yafo:\n${dateList}\n\nTotal for ${nights} night(s) after discount: ${CURRENCY}${total}.\nCould you confirm availability?`;
+  currentMessage = message;
 
   document.getElementById('sendWhatsapp').href =
     `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(message)}`;
   document.getElementById('sendEmail').href =
     `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('Booking request — Entire rental unit in Tel Aviv-Yafo')}&body=${encodeURIComponent(message)}`;
 }
+
+document.getElementById('copyRequest').addEventListener('click', async ()=>{
+  const btn = document.getElementById('copyRequest');
+  const original = btn.textContent;
+  try{
+    await navigator.clipboard.writeText(currentMessage);
+    btn.textContent = 'Copied!';
+  }catch(e){
+    // Clipboard API unavailable (e.g. very old browser) — fall back to a manual prompt.
+    window.prompt('Copy this text manually:', currentMessage);
+  }
+  setTimeout(()=> btn.textContent = original, 1500);
+});
 
 document.getElementById('prevMonth').addEventListener('click', ()=>{
   viewDate.setMonth(viewDate.getMonth()-1);
