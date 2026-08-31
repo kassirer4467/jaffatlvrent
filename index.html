@@ -50,7 +50,7 @@
   .hero-facts span{font-size:0.85rem; color:#C9C4AF;}
 
   /* ---------- SECTION SHELL ---------- */
-  section{max-width:900px; margin:0 auto; padding:2.5rem 1.5rem;}
+  section{max-width:900px; margin:0 auto; padding:3.5rem 1.5rem;}
   h2{font-family:var(--font-display); font-size:1.8rem; margin:0 0 1rem;}
   .about p{max-width:64ch; font-size:1.05rem;}
   .amenities{display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:0.75rem 1.5rem; padding:0; list-style:none; margin-top:1.5rem;}
@@ -68,6 +68,7 @@
     border-radius:50%; width:2.1rem; height:2.1rem; font-size:1rem; cursor:pointer;
   }
   .cal-nav button:hover{background:var(--pine); color:var(--stone);}
+  .cal-nav button:disabled{opacity:0.3; cursor:not-allowed; background:none; color:var(--pine);}
   .cal-title{font-family:var(--font-display); font-size:1.25rem;}
 
   .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
@@ -163,7 +164,7 @@
 </div>
 
 <section class="gallery">
-  <h2>Where you’ll sleep</h2>
+  <h2>Photos</h2>
   <div class="gallery-viewer">
     <button class="gallery-arrow left" id="galleryPrev" aria-label="Previous photo">&#8592;</button>
     <img id="galleryMain" alt="Property photo">
@@ -333,6 +334,10 @@ dowNames.forEach(n=>{
   dowRow.appendChild(el);
 });
 
+const todayStart = new Date();
+todayStart.setHours(0,0,0,0);
+const currentMonthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
+
 function fmtKey(d){ return d.toISOString().slice(0,10); }
 function fmtNice(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 
@@ -341,6 +346,10 @@ function renderCalendar(){
   grid.innerHTML = '';
   document.getElementById('calTitle').textContent =
     viewDate.toLocaleDateString('en-US',{month:'long', year:'numeric'});
+
+  const atCurrentMonth = viewDate.getFullYear() === currentMonthStart.getFullYear()
+    && viewDate.getMonth() === currentMonthStart.getMonth();
+  document.getElementById('prevMonth').disabled = atCurrentMonth;
 
   const firstDow = viewDate.getDay();
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 0).getDate();
@@ -356,6 +365,7 @@ function renderCalendar(){
     const d = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
     const key = fmtKey(d);
     const info = AVAILABILITY[key];
+    const isPast = d < todayStart;
     const cell = document.createElement('div');
     cell.className = 'cal-day';
     if(key === todayKey) cell.classList.add('today');
@@ -364,7 +374,7 @@ function renderCalendar(){
     num.textContent = day;
     cell.appendChild(num);
 
-    if(!info){
+    if(isPast || !info){
       cell.classList.add('unavailable');
     } else if(!info.available){
       cell.classList.add('unavailable');
@@ -459,7 +469,9 @@ document.getElementById('copyRequest').addEventListener('click', async ()=>{
 });
 
 document.getElementById('prevMonth').addEventListener('click', ()=>{
-  viewDate.setMonth(viewDate.getMonth()-1);
+  const target = new Date(viewDate.getFullYear(), viewDate.getMonth()-1, 1);
+  if(target < currentMonthStart) return;
+  viewDate = target;
   renderCalendar();
 });
 document.getElementById('nextMonth').addEventListener('click', ()=>{
