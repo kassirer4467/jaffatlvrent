@@ -284,7 +284,7 @@ const DISCOUNT_TIERS = [
 // but recommended: date | price | available
 //   2026-09-01 | 420 | TRUE
 //   2026-09-02 | 620 | FALSE
-const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hrSLtF1wiPz_nFsOgudSI7ipBlcEo5yiQe1p0HxQ6GI/gviz/tq?tqx=out:csv&gid=1535811473";
+const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSCmMCI-MRzEAU6-qS5d01Y22BbrcFYfti6EDQXprX1pQ8RdmCWPfChyBbYtxIqHUj3uRO5x9QfT0R5/pub?gid=1535811473&single=true&output=csv";
 
 // ---- YOUR PHOTOS ----
 // List your image file names here, in the order you want them to appear.
@@ -455,7 +455,7 @@ function buildDemoAvailability(){
   for(let i=0;i<120;i++){
     const d = new Date(start);
     d.setDate(start.getDate()+i);
-    const key = d.toISOString().slice(0,10);
+    const key = fmtKey(d);
     const isWeekend = d.getDay()===5 || d.getDay()===6; // Fri/Sat
     const price = isWeekend ? 620 : 420;
     const available = Math.random() > 0.18; // ~82% of days open, for demo only
@@ -519,7 +519,15 @@ const todayStart = new Date();
 todayStart.setHours(0,0,0,0);
 const currentMonthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
 
-function fmtKey(d){ return d.toISOString().slice(0,10); }
+function fmtKey(d){
+  // Build the key from LOCAL date parts, not toISOString() (which converts
+  // to UTC and silently shifts the date by a day in timezones ahead of UTC,
+  // like Israel — this was the source of the off-by-one bug).
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 function fmtNice(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 
 function renderCalendar(){
