@@ -95,6 +95,14 @@
     position:sticky; top:1.5rem;
   }
   .summary h3{font-family:var(--font-display); margin-top:0; font-size:1.3rem;}
+  .options-block{display:flex; flex-direction:column; gap:0.9rem; margin-bottom:1.25rem; padding-bottom:1.1rem; border-bottom:1px solid var(--line);}
+  .field-label{font-size:0.88rem; color:#4a4a3e; display:flex; flex-direction:column; gap:0.3rem;}
+  .field-label select{
+    padding:0.5rem 0.6rem; border-radius:8px; border:1px solid var(--line); font-size:0.95rem;
+    font-family:var(--font-body); background:#fff; color:var(--pine-dark);
+  }
+  .checkbox-label{display:flex; align-items:flex-start; gap:0.55rem; font-size:0.88rem; color:#4a4a3e; cursor:pointer;}
+  .checkbox-label input{margin-top:0.2rem; width:16px; height:16px; accent-color:var(--pine); flex:none;}
   .summary .empty-note{color:#6b6b5c; font-size:0.92rem;}
   .summary-list{list-style:none; padding:0; margin:0.75rem 0; max-height:180px; overflow-y:auto;}
   .summary-list li{display:flex; justify-content:space-between; font-size:0.9rem; padding:0.3rem 0; border-bottom:1px dashed var(--line);}
@@ -212,12 +220,35 @@
 
     <div class="summary">
       <h3>Your request</h3>
+
+      <div class="options-block">
+        <label class="field-label">
+          Guests
+          <select id="guestCount">
+            <option value="1">1 guest</option>
+            <option value="2" selected>2 guests</option>
+            <option value="3">3 guests</option>
+            <option value="4">4 guests</option>
+            <option value="5">5 guests</option>
+            <option value="6">6 guests</option>
+          </select>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="israeliResident">
+          <span>Israeli resident / citizen? An 18% VAT applies to accommodation for Israeli residents, per Israeli law for short-term rentals.</span>
+        </label>
+      </div>
+
       <div id="summaryEmpty" class="empty-note">Select one or more dates on the calendar to see the price.</div>
       <div id="summaryContent" style="display:none;">
         <ul class="summary-list" id="summaryList"></ul>
-        <div class="summary-row"><span id="nightsLabel">0 nights</span><span id="subtotal">₪0</span></div>
+        <div class="summary-row"><span id="nightsLabel">0 nights</span><span id="accomSubtotal">$0</span></div>
         <div class="discount-note" id="discountNote" style="display:none;"></div>
-        <div class="summary-row total"><span>Total</span><span id="total">₪0</span></div>
+        <div class="summary-row" id="extraGuestRow" style="display:none;"><span id="extraGuestLabel">Extra guest fee</span><span id="extraGuestAmount">$0</span></div>
+        <div class="summary-row" style="border-top:1px dashed var(--line); padding-top:0.5rem; margin-top:0.3rem;"><span>Subtotal</span><span id="preVatSubtotal">$0</span></div>
+        <div class="summary-row" id="vatRow" style="display:none;"><span>VAT (18%)</span><span id="vatAmount">$0</span></div>
+        <div class="summary-row"><span>Cleaning fee</span><span id="cleaningFeeAmount">$0</span></div>
+        <div class="summary-row total"><span>Total</span><span id="total">$0</span></div>
         <div class="send-buttons">
           <a class="btn btn-whatsapp" id="sendWhatsapp" target="_blank">Send request via WhatsApp</a>
           <a class="btn btn-email" id="sendEmail">Send request via email</a>
@@ -269,6 +300,105 @@ const PHOTOS = [
   "photo-7.jpg",
   "photo-8.jpg"
 ];
+
+// ---- PRICING RULES (guests / VAT / cleaning) ----
+// Extra-person rate and cleaning fee are pulled from a small published Google
+// Sheet (see GOOGLE_CONFIG_CSV_URL below) so you can change them without
+// touching code. If that sheet is empty, unreachable, or the URL is blank,
+// these hardcoded defaults are used instead — the site never breaks because
+// of a pricing sheet problem.
+const CONFIG_DEFAULTS = {
+  extra_person_rate: 20,   // $ per extra guest (beyond 2), per night
+  cleaning_fee: 120        // $ flat fee per stay, charged after VAT
+};
+const BASE_GUESTS_INCLUDED = 2;  // nightly price already covers this many guests
+const VAT_RATE = 0.18;           // 18% Israeli VAT, applied to accommodation only
+
+// Publish a 2-column "key,value" sheet to the web as CSV (see setup guide) and
+// paste that link here. Leave empty ("") to always use CONFIG_DEFAULTS above.
+//   extra_person_rate,20
+//   cleaning_fee,120
+const GOOGLE_CONFIG_CSV_URL = "";
+
+// How long a successfully-fetched config is trusted before re-checking the
+// sheet, in milliseconds. This is the "cache" that avoids re-fetching the
+// sheet on every single price calculation — 1 hour by default.
+const CONFIG_CACHE_TTL_MS = 60 * 60 * 1000;
+/* ========================================================================= */
+
+/* ---- Config fetcher: reads extra_person_rate / cleaning_fee from a sheet ----
+   Cache strategy: an in-memory value is reused for the rest of this page
+   visit (so scrolling the calendar or changing guest count never re-fetches).
+   A best-effort localStorage cache additionally remembers the value across
+   page loads for CONFIG_CACHE_TTL_MS, wrapped in try/catch so the site still
+   works fine in browsers/environments where storage is blocked. */
+let pricingConfig = { ...CONFIG_DEFAULTS };
+let sessionConfigCache = null;
+
+function readConfigCache(){
+  try{
+    const raw = localStorage.getItem('rentalPricingConfig');
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    if(Date.now() - parsed.timestamp > CONFIG_CACHE_TTL_MS) return null;
+    return parsed.value;
+  }catch(e){
+    return null; // storage unavailable — caller will fetch fresh instead
+  }
+}
+
+function writeConfigCache(value){
+  try{
+    localStorage.setItem('rentalPricingConfig', JSON.stringify({ timestamp: Date.now(), value }));
+  }catch(e){
+    // Storage unavailable/blocked — no problem, the in-memory cache still
+    // covers the rest of this page visit.
+  }
+}
+
+// Parses "key,value" rows. Unknown keys and malformed rows are ignored, so a
+// header row like "key,value" is silently skipped without special-casing it.
+function parseConfigCsv(csvText){
+  const result = {};
+  csvText.trim().split(/\r?\n/).forEach(line=>{
+    const parts = line.split(',').map(s=>s.trim().toLowerCase());
+    if(parts.length < 2) return;
+    const key = parts[0].replace(/\s+/g,'_');
+    const value = parseFloat(parts[1]);
+    if(isNaN(value)) return;
+    if(key === 'extra_person_rate' || key === 'cleaning_fee'){
+      result[key] = value;
+    }
+  });
+  return result;
+}
+
+async function loadPricingConfig(){
+  if(sessionConfigCache) return sessionConfigCache;         // already fetched this visit
+
+  const cached = readConfigCache();
+  if(cached){ sessionConfigCache = cached; return cached; }  // recent cached value
+
+  if(!GOOGLE_CONFIG_CSV_URL){
+    sessionConfigCache = { ...CONFIG_DEFAULTS };
+    return sessionConfigCache;
+  }
+
+  try{
+    const res = await fetch(GOOGLE_CONFIG_CSV_URL, { cache: 'no-store' });
+    if(!res.ok) throw new Error('Config sheet fetch failed: ' + res.status);
+    const text = await res.text();
+    const parsed = parseConfigCsv(text);
+    const merged = { ...CONFIG_DEFAULTS, ...parsed };  // any missing key falls back to default
+    sessionConfigCache = merged;
+    writeConfigCache(merged);
+    return merged;
+  }catch(err){
+    console.warn('Could not load pricing config sheet, using defaults.', err);
+    sessionConfigCache = { ...CONFIG_DEFAULTS };
+    return sessionConfigCache;
+  }
+}
 /* ========================================================================= */
 
 // Demo pricing/availability generator — used only if no sheet URL is set above.
@@ -421,10 +551,10 @@ function renderSummary(){
 
   const keys = Array.from(selected).sort();
   list.innerHTML = '';
-  let subtotal = 0;
+  let accomSubtotal = 0;
   keys.forEach(key=>{
     const info = AVAILABILITY[key];
-    subtotal += info.price;
+    accomSubtotal += info.price;
     const li = document.createElement('li');
     const d = new Date(key);
     li.innerHTML = `<span>${fmtNice(d)}</span><span>${CURRENCY}${info.price}</span>`;
@@ -432,12 +562,36 @@ function renderSummary(){
   });
 
   const nights = keys.length;
+
+  /* ---- 1. Accommodation subtotal + multi-night discount ---- */
   const percent = getDiscountPercent(nights);
-  const discountAmount = Math.round(subtotal * percent / 100);
-  const total = subtotal - discountAmount;
+  const discountAmount = Math.round(accomSubtotal * percent / 100);
+  const discountedAccom = accomSubtotal - discountAmount;
+
+  /* ---- 2. Extra guest fee ----
+     Validate & clamp guest count to the 1–6 range the <select> already
+     enforces, as a defensive fallback in case the value is ever read before
+     the control is ready. */
+  const guestsRaw = parseInt(document.getElementById('guestCount').value, 10);
+  const guests = Math.min(6, Math.max(1, isNaN(guestsRaw) ? BASE_GUESTS_INCLUDED : guestsRaw));
+  const extraGuests = Math.max(0, guests - BASE_GUESTS_INCLUDED);
+  const extraGuestFee = extraGuests * pricingConfig.extra_person_rate * nights;
+
+  /* ---- 3. Subtotal (accommodation + extra guests), pre-VAT ---- */
+  const subtotal = discountedAccom + extraGuestFee;
+
+  /* ---- 4. VAT — 18%, Israeli residents only, accommodation only ---- */
+  const isIsraeli = document.getElementById('israeliResident').checked;
+  const vatAmount = isIsraeli ? Math.round(subtotal * VAT_RATE) : 0;
+
+  /* ---- 5. Cleaning fee — flat, added after VAT, itself not taxed ---- */
+  const cleaningFee = pricingConfig.cleaning_fee;
+
+  /* ---- 6. Final total ---- */
+  const total = subtotal + vatAmount + cleaningFee;
 
   document.getElementById('nightsLabel').textContent = `${nights} night${nights>1?'s':''}`;
-  document.getElementById('subtotal').textContent = `${CURRENCY}${subtotal}`;
+  document.getElementById('accomSubtotal').textContent = `${CURRENCY}${accomSubtotal}`;
 
   const discountNote = document.getElementById('discountNote');
   if(percent > 0){
@@ -446,10 +600,45 @@ function renderSummary(){
   } else {
     discountNote.style.display = 'none';
   }
+
+  const extraGuestRow = document.getElementById('extraGuestRow');
+  if(extraGuests > 0){
+    extraGuestRow.style.display = 'flex';
+    document.getElementById('extraGuestLabel').textContent =
+      `Extra guest fee (${extraGuests} × ${CURRENCY}${pricingConfig.extra_person_rate} × ${nights} night${nights>1?'s':''})`;
+    document.getElementById('extraGuestAmount').textContent = `${CURRENCY}${extraGuestFee}`;
+  } else {
+    extraGuestRow.style.display = 'none';
+  }
+
+  document.getElementById('preVatSubtotal').textContent = `${CURRENCY}${subtotal}`;
+
+  const vatRow = document.getElementById('vatRow');
+  if(isIsraeli){
+    vatRow.style.display = 'flex';
+    document.getElementById('vatAmount').textContent = `${CURRENCY}${vatAmount}`;
+  } else {
+    vatRow.style.display = 'none';
+  }
+
+  document.getElementById('cleaningFeeAmount').textContent = `${CURRENCY}${cleaningFee}`;
   document.getElementById('total').textContent = `${CURRENCY}${total}`;
 
   const dateList = keys.map(k=>fmtNice(new Date(k))).join(', ');
-  const message = `Hi! I'd like to request the following dates at Entire rental unit in Tel Aviv-Yafo:\n${dateList}\n\nTotal for ${nights} night(s) after discount: ${CURRENCY}${total}.\nCould you confirm availability?`;
+  const messageLines = [
+    `Hi! I'd like to request the following dates at Entire rental unit in Tel Aviv-Yafo:`,
+    dateList,
+    ``,
+    `Guests: ${guests}`,
+    `Nights: ${nights}`,
+    `Accommodation: ${CURRENCY}${accomSubtotal}${percent>0 ? ` (−${CURRENCY}${discountAmount} discount)` : ''}`,
+  ];
+  if(extraGuests > 0) messageLines.push(`Extra guest fee: ${CURRENCY}${extraGuestFee}`);
+  if(isIsraeli) messageLines.push(`VAT (18%): ${CURRENCY}${vatAmount}`);
+  messageLines.push(`Cleaning fee: ${CURRENCY}${cleaningFee}`);
+  messageLines.push(`Total: ${CURRENCY}${total}`);
+  messageLines.push(``, `Could you confirm availability?`);
+  const message = messageLines.join('\n');
   currentMessage = message;
 
   document.getElementById('sendWhatsapp').href =
@@ -457,6 +646,9 @@ function renderSummary(){
   document.getElementById('sendEmail').href =
     `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('Booking request — Entire rental unit in Tel Aviv-Yafo')}&body=${encodeURIComponent(message)}`;
 }
+
+document.getElementById('guestCount').addEventListener('change', renderSummary);
+document.getElementById('israeliResident').addEventListener('change', renderSummary);
 
 document.getElementById('copyRequest').addEventListener('click', async ()=>{
   const btn = document.getElementById('copyRequest');
@@ -483,8 +675,9 @@ document.getElementById('nextMonth').addEventListener('click', ()=>{
 });
 
 document.getElementById('calGrid').innerHTML = '<div class="loading-note">Loading calendar…</div>';
-loadAvailability().then(data=>{
-  AVAILABILITY = data;
+Promise.all([loadAvailability(), loadPricingConfig()]).then(([availData, configData])=>{
+  AVAILABILITY = availData;
+  pricingConfig = configData;
   renderCalendar();
   renderSummary();
 });
