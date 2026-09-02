@@ -419,13 +419,17 @@ function parseConfigCsv(csvText){
 async function loadPricingConfig(){
   if(sessionConfigCache) return sessionConfigCache;         // already fetched this visit
 
-  const cached = readConfigCache();
-  if(cached){ sessionConfigCache = cached; return cached; }  // recent cached value
-
   if(!GOOGLE_CONFIG_CSV_URL){
+    // No sheet configured — always use the current code defaults, and make
+    // sure no leftover cached value from an earlier sheet setup can override
+    // them (defensive: clears any stale cache from a previous configuration).
+    try{ localStorage.removeItem('rentalPricingConfig'); }catch(e){}
     sessionConfigCache = { ...CONFIG_DEFAULTS };
     return sessionConfigCache;
   }
+
+  const cached = readConfigCache();
+  if(cached){ sessionConfigCache = cached; return cached; }  // recent cached value
 
   try{
     const res = await fetch(GOOGLE_CONFIG_CSV_URL, { cache: 'no-store' });
