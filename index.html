@@ -151,6 +151,11 @@
   .thumb:hover{opacity:0.9;}
   .thumb.active{opacity:1; border-color:var(--brass);}
 
+  /* Smaller variant used by the second (location) gallery — same look,
+     just capped narrower so the main photo reads as visually secondary. */
+  .gallery-viewer.small{max-width:480px; margin-left:auto; margin-right:auto;}
+  .gallery-thumbs.small{max-width:480px; margin-left:auto; margin-right:auto;}
+
   .loading-note{color:#6b6b5c; font-size:0.9rem; padding:1rem 0;}
 </style>
 </head>
@@ -213,9 +218,23 @@ Just a 2-minute walk from the heart of the Jaffa Flea Market, surrounded by rest
   </p>
 </section>
 
+<section class="gallery gallery-secondary">
+  <h2>The Neighborhood</h2>
+  <div class="gallery-viewer small">
+    <button class="gallery-arrow left" id="galleryPrev2" aria-label="Previous photo">&#8592;</button>
+    <img id="galleryMain2" alt="Neighborhood photo">
+    <button class="gallery-arrow right" id="galleryNext2" aria-label="Next photo">&#8594;</button>
+    <div class="gallery-counter" id="galleryCounter2"></div>
+  </div>
+  <div class="gallery-thumbs small" id="galleryThumbs2"></div>
+</section>
+
 <section class="booking">
   <h2>Check availability & price</h2>
-  <p style="color:#5b5b4d; max-width:56ch;">Click on the dates you'd like to stay. Prices are shown per night; a longer stay unlocks a discount automatically.</p>
+  <!-- Discount mention removed from this line while DISCOUNTS_ENABLED = false.
+       To restore: change the sentence back to
+       "Click on the dates you'd like to stay. Prices are shown per night; a longer stay unlocks a discount automatically." -->
+  <p style="color:#5b5b4d; max-width:56ch;">Click on the dates you'd like to stay. Prices are shown per night.</p>
 
   <div class="booking-grid">
     <div>
@@ -285,6 +304,11 @@ const OWNER_WHATSAPP = "972552261729";      // country code + number, no + or sp
 const OWNER_EMAIL     = "kassirer67@gmail.com";
 const CURRENCY        = "$";
 
+// Master switch for the multi-night discount feature. Set to true to bring
+// discounts back on — the tiers below, the calculation, and the UI note are
+// all still fully wired up and need no other changes when you do.
+const DISCOUNTS_ENABLED = false;
+
 // Discount tiers: minimum nights -> percent off. Edit freely.
 const DISCOUNT_TIERS = [
   { minNights: 7, percent: 15 },
@@ -313,6 +337,15 @@ const PHOTOS = [
   "photo-6.jpg",
   "photo-7.jpg",
   "photo-8.jpg"
+];
+
+// ---- YOUR NEIGHBORHOOD / LOCATION PHOTOS ----
+// Same idea as PHOTOS above, for the smaller second gallery under
+// "An Exceptional Location". Add or remove filenames freely.
+const PHOTOS_LOCATION = [
+  "location-1.jpg",
+  "location-2.jpg",
+  "location-3.jpg"
 ];
 
 // ---- PRICING RULES (guests / VAT / cleaning) ----
@@ -601,6 +634,7 @@ function renderCalendar(){
 }
 
 function getDiscountPercent(nights){
+  if(!DISCOUNTS_ENABLED) return 0; // discounts turned off — tiers below are untouched and ready to re-enable
   for(const tier of DISCOUNT_TIERS){
     if(nights >= tier.minNights) return tier.percent;
   }
@@ -762,8 +796,8 @@ function showPhoto(i){
   galleryIndex = ((i % galleryPhotos.length) + galleryPhotos.length) % galleryPhotos.length;
   document.getElementById('galleryMain').src = galleryPhotos[galleryIndex];
   document.getElementById('galleryCounter').textContent = `${galleryIndex+1} / ${galleryPhotos.length}`;
-  document.querySelectorAll('.thumb').forEach((t, idx)=> t.classList.toggle('active', idx === galleryIndex));
-  const activeThumb = document.querySelector('.thumb.active');
+  document.querySelectorAll('#galleryThumbs .thumb').forEach((t, idx)=> t.classList.toggle('active', idx === galleryIndex));
+  const activeThumb = document.querySelector('#galleryThumbs .thumb.active');
   if(activeThumb) activeThumb.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
 }
 
@@ -802,6 +836,57 @@ document.getElementById('galleryPrev').addEventListener('click', ()=> showPhoto(
 document.getElementById('galleryNext').addEventListener('click', ()=> showPhoto(galleryIndex + 1));
 
 initGallery();
+
+// ---- Second photo gallery (neighborhood) ----
+// Same mechanism as the main gallery above, kept as its own copy with its
+// own IDs/variables so the main gallery above never needs to change.
+let galleryPhotos2 = [...PHOTOS_LOCATION];
+let galleryIndex2 = 0;
+
+function showPhoto2(i){
+  if(galleryPhotos2.length === 0) return;
+  galleryIndex2 = ((i % galleryPhotos2.length) + galleryPhotos2.length) % galleryPhotos2.length;
+  document.getElementById('galleryMain2').src = galleryPhotos2[galleryIndex2];
+  document.getElementById('galleryCounter2').textContent = `${galleryIndex2+1} / ${galleryPhotos2.length}`;
+  document.querySelectorAll('#galleryThumbs2 .thumb').forEach((t, idx)=> t.classList.toggle('active', idx === galleryIndex2));
+  const activeThumb2 = document.querySelector('#galleryThumbs2 .thumb.active');
+  if(activeThumb2) activeThumb2.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+}
+
+function renderThumbs2(){
+  const thumbsEl = document.getElementById('galleryThumbs2');
+  thumbsEl.innerHTML = '';
+  galleryPhotos2.forEach((src, i)=>{
+    const img = document.createElement('img');
+    img.src = src;
+    img.className = 'thumb';
+    img.alt = `Neighborhood photo ${i+1}`;
+    img.addEventListener('click', ()=> showPhoto2(i));
+    img.addEventListener('error', ()=>{
+      const stillAt = galleryPhotos2.indexOf(src);
+      if(stillAt > -1){
+        galleryPhotos2.splice(stillAt, 1);
+        renderThumbs2();
+        showPhoto2(Math.min(galleryIndex2, galleryPhotos2.length - 1));
+      }
+    });
+    thumbsEl.appendChild(img);
+  });
+}
+
+function initGallery2(){
+  if(galleryPhotos2.length === 0){
+    document.querySelector('.gallery-secondary').style.display = 'none';
+    return;
+  }
+  renderThumbs2();
+  showPhoto2(0);
+}
+
+document.getElementById('galleryPrev2').addEventListener('click', ()=> showPhoto2(galleryIndex2 - 1));
+document.getElementById('galleryNext2').addEventListener('click', ()=> showPhoto2(galleryIndex2 + 1));
+
+initGallery2();
 </script>
 </body>
 </html>
