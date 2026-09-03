@@ -153,9 +153,9 @@
 
   /* Smaller variant used by the second (location) gallery — same look,
      just capped narrower so the main photo reads as visually secondary. */
-  .gallery-viewer.small{max-width:480px; margin-left:auto; margin-right:auto;}
-  .gallery-thumbs.small{max-width:480px; margin-left:auto; margin-right:auto;}
-
+  .gallery-viewer.small{max-width:480px; margin-left:0; margin-right:auto;}
+  .gallery-thumbs.small{max-width:480px; margin-left:0; margin-right:auto;}
+  
   .loading-note{color:#6b6b5c; font-size:0.9rem; padding:1rem 0;}
 </style>
 </head>
@@ -219,7 +219,6 @@ Just a 2-minute walk from the heart of the Jaffa Flea Market, surrounded by rest
 </section>
 
 <section class="gallery gallery-secondary">
-  <h2>The Neighborhood</h2>
   <div class="gallery-viewer small">
     <button class="gallery-arrow left" id="galleryPrev2" aria-label="Previous photo">&#8592;</button>
     <img id="galleryMain2" alt="Neighborhood photo">
