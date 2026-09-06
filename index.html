@@ -782,7 +782,7 @@ function renderSummary(){
 
   const dateList = formatDateRangeForMessage(keys);
   const messageLines = [
-    `Hi! I'd like to request the following dates at Entire rental unit in Tel Aviv-Yafo:`,
+    `Hi! I'd like to request the following dates at Jaffa-TLV green balcony apartment:`,
     dateList,
     ``,
     `Guests: ${guests}`,
@@ -800,7 +800,7 @@ function renderSummary(){
   document.getElementById('sendWhatsapp').href =
     `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(message)}`;
   document.getElementById('sendEmail').href =
-    `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('Booking request — Entire rental unit in Tel Aviv-Yafo')}&body=${encodeURIComponent(message)}`;
+    `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('Booking request - Jaffa-TLV green balcony apartment')}&body=${encodeURIComponent(message)}`;
 }
 
 document.getElementById('guestCount').addEventListener('change', renderSummary);
