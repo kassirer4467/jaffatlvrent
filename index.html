@@ -553,6 +553,7 @@ const dowNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 let viewDate = new Date();
 viewDate.setDate(1);
 const selected = new Set();
+let rangeAnchor = null; // holds the first-click date key while awaiting the second click of a range
 let currentMessage = '';
 
 const dowRow = document.getElementById('dowRow');
@@ -577,6 +578,31 @@ function fmtKey(d){
   return `${y}-${m}-${day}`;
 }
 function fmtNice(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+
+// Parses a "YYYY-MM-DD" key back into a local Date, deliberately avoiding
+// `new Date(key)` — that parses as UTC and can shift by a day in timezones
+// ahead of UTC (the same class of bug fixed elsewhere in fmtKey()).
+function parseKey(key){
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Fills `selected` with every day from startKey to endKey (inclusive),
+// skipping any day that's unavailable or has no pricing data — so a range
+// spanning a blocked date simply excludes that date rather than breaking
+// the summary/pricing logic downstream, which assumes every key in
+// `selected` has valid AVAILABILITY data.
+function fillRange(startKey, endKey){
+  const [lo, hi] = startKey <= endKey ? [startKey, endKey] : [endKey, startKey];
+  let cursor = parseKey(lo);
+  const last = parseKey(hi);
+  while(cursor <= last){
+    const key = fmtKey(cursor);
+    const info = AVAILABILITY[key];
+    if(info && info.available) selected.add(key);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+}
 
 function renderCalendar(){
   const grid = document.getElementById('calGrid');
@@ -624,7 +650,19 @@ function renderCalendar(){
       cell.appendChild(p);
       if(selected.has(key)) cell.classList.add('selected');
       cell.addEventListener('click', ()=>{
-        if(selected.has(key)) selected.delete(key); else selected.add(key);
+        if(rangeAnchor === null){
+          // First click of a new range: clear any previous selection and
+          // highlight just this day while we wait for the second click.
+          selected.clear();
+          selected.add(key);
+          rangeAnchor = key;
+        } else {
+          // Second click: fill in every valid day between the anchor and
+          // this click (inclusive), regardless of click order.
+          selected.clear();
+          fillRange(rangeAnchor, key);
+          rangeAnchor = null; // range complete — next click starts a new one
+        }
         renderCalendar();
         renderSummary();
       });
