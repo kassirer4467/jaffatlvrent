@@ -577,6 +577,19 @@ function fmtKey(d){
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
+// Formats the selected keys as a single date range for the owner message,
+// e.g. "9/21/2026 - 9/26/2026" (or just "9/21/2026" for a one-night stay).
+// keys is already sorted ascending, and since date selection is a contiguous
+// range, the first and last entries are exactly the start and end dates —
+// this works for any range, including ones crossing month/year boundaries.
+function formatDateRangeForMessage(keys){
+  if(keys.length === 0) return '';
+  const start = parseKey(keys[0]).toLocaleDateString('en-US');
+  if(keys.length === 1) return start;
+  const end = parseKey(keys[keys.length - 1]).toLocaleDateString('en-US');
+  return `${start} - ${end}`;
+}
+
 function fmtNice(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 
 // Parses a "YYYY-MM-DD" key back into a local Date, deliberately avoiding
@@ -767,7 +780,7 @@ function renderSummary(){
   document.getElementById('cleaningFeeAmount').textContent = `${CURRENCY}${cleaningFee}`;
   document.getElementById('total').textContent = `${CURRENCY}${total}`;
 
-  const dateList = keys.map(k=>fmtNice(new Date(k))).join(', ');
+  const dateList = formatDateRangeForMessage(keys);
   const messageLines = [
     `Hi! I'd like to request the following dates at Entire rental unit in Tel Aviv-Yafo:`,
     dateList,
