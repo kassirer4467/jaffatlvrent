@@ -322,6 +322,18 @@ const DISCOUNT_TIERS = [
 //   2026-09-02 | 620 | FALSE
 const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hrSLtF1wiPz_nFsOgudSI7ipBlcEo5yiQe1p0HxQ6GI/gviz/tq?tqx=out:csv&gid=1535811473";
 
+// ---- CACHE BUSTING FOR PHOTOS ----
+// Browsers and CDNs (GitHub Pages, Vercel, etc.) cache image files by their
+// URL. If you overwrite a photo file with new content but keep the exact
+// same filename, the URL never changes — so visitors (and the CDN) may keep
+// showing the old cached image for hours or days.
+// Fix: bump this number by 1 any time you replace ANY photo file, even with
+// the same filename. It gets added to every photo URL as "?v=2", which is a
+// brand new URL as far as caching is concerned, forcing everyone to fetch
+// the new file. You do NOT need to rename your actual image files.
+const PHOTO_CACHE_BUST = "1";
+function withCacheBust(src){ return `${src}?v=${PHOTO_CACHE_BUST}`; }
+
 // ---- YOUR PHOTOS ----
 // List your image file names here, in the order you want them to appear.
 // Add or remove lines freely — the gallery below updates automatically.
@@ -782,7 +794,7 @@ function renderSummary(){
 
   const dateList = formatDateRangeForMessage(keys);
   const messageLines = [
-    `Hi! I'd like to request the following dates at Jaffa-TLV green balcony apartment:`,
+    `Hi! I'd like to request the following dates at Entire rental unit in Tel Aviv-Yafo:`,
     dateList,
     ``,
     `Guests: ${guests}`,
@@ -800,7 +812,7 @@ function renderSummary(){
   document.getElementById('sendWhatsapp').href =
     `https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(message)}`;
   document.getElementById('sendEmail').href =
-    `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('Booking request - Jaffa-TLV green balcony apartment')}&body=${encodeURIComponent(message)}`;
+    `mailto:${OWNER_EMAIL}?subject=${encodeURIComponent('Booking request — Entire rental unit in Tel Aviv-Yafo')}&body=${encodeURIComponent(message)}`;
 }
 
 document.getElementById('guestCount').addEventListener('change', renderSummary);
@@ -845,7 +857,7 @@ let galleryIndex = 0;
 function showPhoto(i){
   if(galleryPhotos.length === 0) return;
   galleryIndex = ((i % galleryPhotos.length) + galleryPhotos.length) % galleryPhotos.length;
-  document.getElementById('galleryMain').src = galleryPhotos[galleryIndex];
+  document.getElementById('galleryMain').src = withCacheBust(galleryPhotos[galleryIndex]);
   document.getElementById('galleryCounter').textContent = `${galleryIndex+1} / ${galleryPhotos.length}`;
   document.querySelectorAll('#galleryThumbs .thumb').forEach((t, idx)=> t.classList.toggle('active', idx === galleryIndex));
   const activeThumb = document.querySelector('#galleryThumbs .thumb.active');
@@ -857,7 +869,7 @@ function renderThumbs(){
   thumbsEl.innerHTML = '';
   galleryPhotos.forEach((src, i)=>{
     const img = document.createElement('img');
-    img.src = src;
+    img.src = withCacheBust(src);
     img.className = 'thumb';
     img.alt = `Photo ${i+1}`;
     img.addEventListener('click', ()=> showPhoto(i));
@@ -897,7 +909,7 @@ let galleryIndex2 = 0;
 function showPhoto2(i){
   if(galleryPhotos2.length === 0) return;
   galleryIndex2 = ((i % galleryPhotos2.length) + galleryPhotos2.length) % galleryPhotos2.length;
-  document.getElementById('galleryMain2').src = galleryPhotos2[galleryIndex2];
+  document.getElementById('galleryMain2').src = withCacheBust(galleryPhotos2[galleryIndex2]);
   document.getElementById('galleryCounter2').textContent = `${galleryIndex2+1} / ${galleryPhotos2.length}`;
   document.querySelectorAll('#galleryThumbs2 .thumb').forEach((t, idx)=> t.classList.toggle('active', idx === galleryIndex2));
   const activeThumb2 = document.querySelector('#galleryThumbs2 .thumb.active');
@@ -909,7 +921,7 @@ function renderThumbs2(){
   thumbsEl.innerHTML = '';
   galleryPhotos2.forEach((src, i)=>{
     const img = document.createElement('img');
-    img.src = src;
+    img.src = withCacheBust(src);
     img.className = 'thumb';
     img.alt = `Neighborhood photo ${i+1}`;
     img.addEventListener('click', ()=> showPhoto2(i));
