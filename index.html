@@ -343,7 +343,7 @@ const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hrSLtF1wiP
 // the same filename. It gets added to every photo URL as "?v=2", which is a
 // brand new URL as far as caching is concerned, forcing everyone to fetch
 // the new file. You do NOT need to rename your actual image files.
-const PHOTO_CACHE_BUST = "4";
+const PHOTO_CACHE_BUST = "3";
 function withCacheBust(src){ return `${src}?v=${PHOTO_CACHE_BUST}`; }
 
 // ---- YOUR PHOTOS ----
@@ -909,8 +909,12 @@ function renderThumbs(){
       const stillAt = galleryPhotos.indexOf(src);
       if(stillAt > -1){
         galleryPhotos.splice(stillAt, 1);
+        if(galleryPhotos.length === 0){
+          document.querySelector('.gallery').style.display = 'none';
+          return;
+        }
         renderThumbs();
-        showPhoto(Math.min(galleryIndex, galleryPhotos.length - 1));
+        showPhoto(Math.min(galleryIndex, galleryPhotos.length - 1), { scrollThumbIntoView: false });
       }
     });
     thumbsEl.appendChild(img);
@@ -963,8 +967,12 @@ function renderThumbs2(){
       const stillAt = galleryPhotos2.indexOf(src);
       if(stillAt > -1){
         galleryPhotos2.splice(stillAt, 1);
+        if(galleryPhotos2.length === 0){
+          document.querySelector('.gallery-secondary').style.display = 'none';
+          return;
+        }
         renderThumbs2();
-        showPhoto2(Math.min(galleryIndex2, galleryPhotos2.length - 1));
+        showPhoto2(Math.min(galleryIndex2, galleryPhotos2.length - 1), { scrollThumbIntoView: false });
       }
     });
     thumbsEl.appendChild(img);
