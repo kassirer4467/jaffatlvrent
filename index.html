@@ -294,6 +294,12 @@ A fully equipped kitchen with espresso machine, elevator, free Wi-Fi, air condit
 </footer>
 
 <script>
+// Prevent the browser's native scroll-restoration from reapplying an old
+// scroll position on refresh — combined with the gallery-init fix below,
+// this ensures every fresh load/reload starts at the top of the page.
+if('scrollRestoration' in history){
+  history.scrollRestoration = 'manual';
+}
 /* =========================================================================
    EDIT THESE SETTINGS — everything an owner needs to change lives here.
    ========================================================================= */
@@ -331,7 +337,7 @@ const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hrSLtF1wiP
 // the same filename. It gets added to every photo URL as "?v=2", which is a
 // brand new URL as far as caching is concerned, forcing everyone to fetch
 // the new file. You do NOT need to rename your actual image files.
-const PHOTO_CACHE_BUST = "2";
+const PHOTO_CACHE_BUST = "1";
 function withCacheBust(src){ return `${src}?v=${PHOTO_CACHE_BUST}`; }
 
 // ---- YOUR PHOTOS ----
@@ -345,20 +351,7 @@ const PHOTOS = [
   "photo-5.jpg",
   "photo-6.jpg",
   "photo-7.jpg",
-  "photo-8.jpg",
-  "photo-9.jpg",
-  "photo-10.jpg",
-  "photo-11.jpg",
-  "photo-12.jpg",
-  "photo-13.jpg",
-  "photo-14.jpg",
-  "photo-15.jpg",
-  "photo-16.jpg",
-  "photo-17.jpg",
-  "photo-18.jpg"
-
-
-  
+  "photo-8.jpg"
 ];
 
 // ---- YOUR NEIGHBORHOOD / LOCATION PHOTOS ----
@@ -867,14 +860,17 @@ Promise.all([loadAvailability(), loadPricingConfig()]).then(([availData, configD
 let galleryPhotos = [...PHOTOS];
 let galleryIndex = 0;
 
-function showPhoto(i){
+function showPhoto(i, opts = {}){
+  const { scrollThumbIntoView = true } = opts;
   if(galleryPhotos.length === 0) return;
   galleryIndex = ((i % galleryPhotos.length) + galleryPhotos.length) % galleryPhotos.length;
   document.getElementById('galleryMain').src = withCacheBust(galleryPhotos[galleryIndex]);
   document.getElementById('galleryCounter').textContent = `${galleryIndex+1} / ${galleryPhotos.length}`;
   document.querySelectorAll('#galleryThumbs .thumb').forEach((t, idx)=> t.classList.toggle('active', idx === galleryIndex));
-  const activeThumb = document.querySelector('#galleryThumbs .thumb.active');
-  if(activeThumb) activeThumb.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  if(scrollThumbIntoView){
+    const activeThumb = document.querySelector('#galleryThumbs .thumb.active');
+    if(activeThumb) activeThumb.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  }
 }
 
 function renderThumbs(){
@@ -905,7 +901,7 @@ function initGallery(){
     return;
   }
   renderThumbs();
-  showPhoto(0);
+  showPhoto(0, { scrollThumbIntoView: false });
 }
 
 document.getElementById('galleryPrev').addEventListener('click', ()=> showPhoto(galleryIndex - 1));
@@ -919,14 +915,17 @@ initGallery();
 let galleryPhotos2 = [...PHOTOS_LOCATION];
 let galleryIndex2 = 0;
 
-function showPhoto2(i){
+function showPhoto2(i, opts = {}){
+  const { scrollThumbIntoView = true } = opts;
   if(galleryPhotos2.length === 0) return;
   galleryIndex2 = ((i % galleryPhotos2.length) + galleryPhotos2.length) % galleryPhotos2.length;
   document.getElementById('galleryMain2').src = withCacheBust(galleryPhotos2[galleryIndex2]);
   document.getElementById('galleryCounter2').textContent = `${galleryIndex2+1} / ${galleryPhotos2.length}`;
   document.querySelectorAll('#galleryThumbs2 .thumb').forEach((t, idx)=> t.classList.toggle('active', idx === galleryIndex2));
-  const activeThumb2 = document.querySelector('#galleryThumbs2 .thumb.active');
-  if(activeThumb2) activeThumb2.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  if(scrollThumbIntoView){
+    const activeThumb2 = document.querySelector('#galleryThumbs2 .thumb.active');
+    if(activeThumb2) activeThumb2.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  }
 }
 
 function renderThumbs2(){
@@ -956,7 +955,7 @@ function initGallery2(){
     return;
   }
   renderThumbs2();
-  showPhoto2(0);
+  showPhoto2(0, { scrollThumbIntoView: false });
 }
 
 document.getElementById('galleryPrev2').addEventListener('click', ()=> showPhoto2(galleryIndex2 - 1));
