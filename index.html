@@ -17,6 +17,12 @@
     --font-body: "Avenir Next", "Segoe UI", -apple-system, sans-serif;
   }
   *{box-sizing:border-box;}
+  /* Prevent the browser from silently shifting scroll position when
+     content resizes asynchronously (e.g. the calendar grid replacing its
+     "Loading…" placeholder, or a gallery thumbnail strip resizing after a
+     missing photo is dropped). This is the standard opt-out for browsers'
+     automatic scroll-anchoring compensation. */
+  html{ overflow-anchor: none; }
   body{margin:0; background:var(--paper); color:var(--pine-dark); font-family:var(--font-body); line-height:1.5;}
   a{color:inherit;}
 
