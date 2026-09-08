@@ -128,6 +128,16 @@
 
   footer{text-align:center; padding:2.5rem 1.5rem; color:#6b6b5c; font-size:0.85rem;}
 
+  /* ---------- LOCATION MAP ---------- */
+  .location-map{text-align:center;}
+  .location-map-img{
+    width:100%;
+    max-width:588px;   /* image's native size — never upscaled, scales down on narrow screens */
+    height:auto;       /* preserves the 588x609 aspect ratio at any width, no distortion */
+    border-radius:12px;
+    border:1px solid var(--line);
+  }
+
   /* ---------- GALLERY ---------- */
   .gallery-viewer{
     position:relative; width:100%; aspect-ratio:16/10; background:#12160f;
@@ -294,6 +304,10 @@ Book directly and save on fees.
       </div>
     </div>
   </div>
+</section>
+
+<section class="location-map">
+  <img src="map.jpg" alt="Map showing the apartment's location in Jaffa, Tel Aviv" class="location-map-img">
 </section>
 
 <footer>
