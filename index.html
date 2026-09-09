@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jaffa-TLV green balcony apartment</title>
+<meta name="google-site-verification" content="nwkAcCwwnii0VURT_hV45BKqrmutA2QnLCNnNznb5f0" />
+<title>Jaffa Tel-Aviv green balcony apartment</title>
 <style>
   :root{
     --stone: #EDE7D9;
@@ -179,7 +180,7 @@
 
 <div class="hero">
   <div class="hero-inner">
-    <h1>Jaffa-TLV green balcony apartment</h1>
+    <h1>Jaffa Tel-Aviv green balcony apartment</h1>
     <p>
 Discover the charm of Tel Aviv-Jaffa from this beautifully designed 120 sqm apartment set on the 5th floor in one of Jaffa’s most vibrant neighborhoods. <br>
 Book directly and save on fees.  
@@ -286,8 +287,10 @@ Book directly and save on fees.
         </label>
       </div>
 
-      <div id="summaryEmpty" class="empty-note">Select one or more dates on the calendar to see the price.</div>
+      <div id="summaryEmpty" class="empty-note">Select a check-in date, then a check-out date, to see your price.</div>
       <div id="summaryContent" style="display:none;">
+        <div class="summary-row"><span>Check-in</span><span id="checkInLabel">—</span></div>
+        <div class="summary-row"><span>Check-out</span><span id="checkOutLabel">—</span></div>
         <ul class="summary-list" id="summaryList"></ul>
         <div class="summary-row"><span id="nightsLabel">0 nights</span><span id="accomSubtotal">$0</span></div>
         <div class="discount-note" id="discountNote" style="display:none;"></div>
@@ -324,8 +327,8 @@ if('scrollRestoration' in history){
 /* =========================================================================
    EDIT THESE SETTINGS — everything an owner needs to change lives here.
    ========================================================================= */
-const OWNER_WHATSAPP = "972552261729";      // country code + number, no + or spaces
-const OWNER_EMAIL     = "kassirer67@gmail.com";
+const OWNER_WHATSAPP = "972503233886";      // country code + number, no + or spaces
+const OWNER_EMAIL     = "greenbalcony99@gmail.com";
 const CURRENCY        = "$";
 
 // Master switch for the multi-night discount feature. Set to true to bring
@@ -608,8 +611,13 @@ let AVAILABILITY = {};
 const dowNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 let viewDate = new Date();
 viewDate.setDate(1);
-const selected = new Set();
-let rangeAnchor = null; // holds the first-click date key while awaiting the second click of a range
+// The booking is modeled as a check-in date and a check-out date, not a
+// simple set of selected days. This matters for pricing: the check-out date
+// is the departure day and is never itself a paid night (see
+// getPaidNightKeys below) — only getHighlightedKeys treats it as part of
+// the visually-selected range.
+let checkInKey = null;
+let checkOutKey = null;
 let currentMessage = '';
 
 const dowRow = document.getElementById('dowRow');
@@ -647,6 +655,7 @@ function formatDateRangeForMessage(keys){
 }
 
 function fmtNice(d){ return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function fmtLong(d){ return d.toLocaleDateString('en-US',{month:'long', day:'numeric', year:'numeric'}); }
 
 // Parses a "YYYY-MM-DD" key back into a local Date, deliberately avoiding
 // `new Date(key)` — that parses as UTC and can shift by a day in timezones
@@ -656,21 +665,40 @@ function parseKey(key){
   return new Date(y, m - 1, d);
 }
 
-// Fills `selected` with every day from startKey to endKey (inclusive),
-// skipping any day that's unavailable or has no pricing data — so a range
-// spanning a blocked date simply excludes that date rather than breaking
-// the summary/pricing logic downstream, which assumes every key in
-// `selected` has valid AVAILABILITY data.
-function fillRange(startKey, endKey){
-  const [lo, hi] = startKey <= endKey ? [startKey, endKey] : [endKey, startKey];
-  let cursor = parseKey(lo);
-  const last = parseKey(hi);
+// Full inclusive span from check-in through check-out — used ONLY for the
+// calendar's visual highlight. The check-out day is shown as part of the
+// stay (the guest is still "in" the booking that morning) but is never a
+// paid night — see getPaidNightKeys below for what actually gets billed.
+function getHighlightedKeys(){
+  if(!checkInKey) return new Set();
+  if(!checkOutKey) return new Set([checkInKey]);
+  const keys = new Set();
+  let cursor = parseKey(checkInKey);
+  const last = parseKey(checkOutKey);
   while(cursor <= last){
-    const key = fmtKey(cursor);
-    const info = AVAILABILITY[key];
-    if(info && info.available) selected.add(key);
+    keys.add(fmtKey(cursor));
     cursor.setDate(cursor.getDate() + 1);
   }
+  return keys;
+}
+
+// The nights actually charged: every date from check-in up to but NOT
+// including check-out. E.g. check-in Sep 16 -> check-out Sep 19 = Sep 16,
+// 17, 18 (3 nights) — Sep 19 itself is departure day, not a paid night.
+// Skips any day that's unavailable or has no pricing data, same defensive
+// behavior fillRange had before.
+function getPaidNightKeys(){
+  if(!checkInKey || !checkOutKey) return [];
+  const keys = [];
+  let cursor = parseKey(checkInKey);
+  const last = parseKey(checkOutKey); // exclusive endpoint — loop stops before this date
+  while(cursor < last){
+    const key = fmtKey(cursor);
+    const info = AVAILABILITY[key];
+    if(info && info.available) keys.push(key);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return keys;
 }
 
 function renderCalendar(){
@@ -686,6 +714,7 @@ function renderCalendar(){
   const firstDow = viewDate.getDay();
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth()+1, 0).getDate();
   const todayKey = fmtKey(new Date());
+  const highlightedKeys = getHighlightedKeys();
 
   for(let i=0;i<firstDow;i++){
     const empty = document.createElement('div');
@@ -717,20 +746,21 @@ function renderCalendar(){
       const p = document.createElement('div');
       p.className='price'; p.textContent = CURRENCY+info.price;
       cell.appendChild(p);
-      if(selected.has(key)) cell.classList.add('selected');
+      if(highlightedKeys.has(key)) cell.classList.add('selected');
       cell.addEventListener('click', ()=>{
-        if(rangeAnchor === null){
-          // First click of a new range: clear any previous selection and
-          // highlight just this day while we wait for the second click.
-          selected.clear();
-          selected.add(key);
-          rangeAnchor = key;
+        if(checkInKey === null || checkOutKey !== null){
+          // Starting a brand-new selection: either nothing chosen yet, or a
+          // previous check-in/check-out pair was already complete.
+          checkInKey = key;
+          checkOutKey = null;
+        } else if(key === checkInKey){
+          // Clicking the check-in date again isn't a valid stay on its own
+          // (minimum stay is 1 night, which needs two different dates) —
+          // just keep waiting for an actual check-out date.
         } else {
-          // Second click: fill in every valid day between the anchor and
-          // this click (inclusive), regardless of click order.
-          selected.clear();
-          fillRange(rangeAnchor, key);
-          rangeAnchor = null; // range complete — next click starts a new one
+          const [lo, hi] = key < checkInKey ? [key, checkInKey] : [checkInKey, key];
+          checkInKey = lo;
+          checkOutKey = hi;
         }
         renderCalendar();
         renderSummary();
@@ -753,23 +783,46 @@ function renderSummary(){
   const emptyNote = document.getElementById('summaryEmpty');
   const content = document.getElementById('summaryContent');
 
-  if(selected.size === 0){
+  if(checkInKey === null){
+    emptyNote.textContent = 'Select a check-in date, then a check-out date, to see your price.';
     emptyNote.style.display = 'block';
     content.style.display = 'none';
     return;
   }
+
+  if(checkOutKey === null){
+    // Check-in alone is never a valid booking — minimum stay is 1 night,
+    // which requires a distinct check-out date too.
+    emptyNote.textContent = `Check-in selected: ${fmtLong(parseKey(checkInKey))}. Now select a check-out date.`;
+    emptyNote.style.display = 'block';
+    content.style.display = 'none';
+    return;
+  }
+
+  const nightKeys = getPaidNightKeys();
+
+  if(nightKeys.length === 0){
+    // Can happen if every night between check-in and check-out is unavailable.
+    emptyNote.textContent = "Those dates aren't bookable together — please choose a different check-out date.";
+    emptyNote.style.display = 'block';
+    content.style.display = 'none';
+    return;
+  }
+
   emptyNote.style.display = 'none';
   content.style.display = 'block';
 
-  const keys = Array.from(selected).sort();
+  document.getElementById('checkInLabel').textContent = fmtLong(parseKey(checkInKey));
+  document.getElementById('checkOutLabel').textContent = fmtLong(parseKey(checkOutKey));
+
+  const keys = nightKeys; // paid nights only — check-out date itself is excluded
   list.innerHTML = '';
   let accomSubtotal = 0;
   keys.forEach(key=>{
     const info = AVAILABILITY[key];
     accomSubtotal += info.price;
     const li = document.createElement('li');
-    const d = new Date(key);
-    li.innerHTML = `<span>${fmtNice(d)}</span><span>${CURRENCY}${info.price}</span>`;
+    li.innerHTML = `<span>${fmtNice(parseKey(key))}</span><span>${CURRENCY}${info.price}</span>`;
     list.appendChild(li);
   });
 
@@ -836,10 +889,10 @@ function renderSummary(){
   document.getElementById('cleaningFeeAmount').textContent = `${CURRENCY}${cleaningFee}`;
   document.getElementById('total').textContent = `${CURRENCY}${total}`;
 
-  const dateList = formatDateRangeForMessage(keys);
   const messageLines = [
-    `Hi! I'd like to request the following dates at Entire rental unit in Tel Aviv-Yafo:`,
-    dateList,
+    `Hi! I'd like to request the following stay at Entire rental unit in Tel Aviv-Yafo:`,
+    `Check-in: ${fmtLong(parseKey(checkInKey))}`,
+    `Check-out: ${fmtLong(parseKey(checkOutKey))}`,
     ``,
     `Guests: ${guests}`,
     `Nights: ${nights}`,
