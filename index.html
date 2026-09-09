@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="nwkAcCwwnii0VURT_hV45BKqrmutA2QnLCNnNznb5f0" /> 
 <title>Jaffa Tel-Aviv green balcony apartment</title>
 <style>
   :root{
@@ -137,6 +138,38 @@
     border-radius:12px;
     border:1px solid var(--line);
   }
+
+  /* ---------- REVIEW CAROUSEL ----------
+     Deliberately separate class names (not reusing .gallery-viewer etc.) so
+     this never inherits the rounded-corner styling used elsewhere on the
+     site — this frame must stay perfectly square-cornered. */
+  .review-carousel-section{text-align:center;}
+  .review-carousel{
+    position:relative;
+    width:700px;
+    max-width:100%;   /* scales down proportionally on narrow screens */
+    margin:0 auto;
+  }
+  .review-image{
+    display:block;
+    width:100%;
+    height:auto;
+    aspect-ratio:700/265;  /* locks the 700x265 proportions, no distortion */
+    object-fit:contain;
+    background:#fff;
+    border:1px solid var(--line);  /* matches the site's existing border color */
+    border-radius:0 !important;    /* explicit: sharp corners, never rounded */
+  }
+  .review-arrow{
+    position:absolute; top:50%; transform:translateY(-50%);
+    background:rgba(20,24,18,0.55); color:#fff; border:none;
+    width:2.4rem; height:2.4rem; border-radius:50%; /* the round nav buttons are not the "frame" */
+    font-size:1.1rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .review-arrow:hover{background:rgba(20,24,18,0.82);}
+  .review-arrow.left{left:0.6rem;}
+  .review-arrow.right{right:0.6rem;}
 
   /* ---------- GALLERY ---------- */
   .gallery-viewer{
@@ -312,6 +345,14 @@ Book directly and save on fees.
   <img src="map.jpg" alt="Map showing the apartment's location in Jaffa, Tel Aviv" class="location-map-img">
 </section>
 
+<section class="review-carousel-section">
+  <div class="review-carousel">
+    <button class="review-arrow left" id="reviewPrev" aria-label="Previous review">&#8592;</button>
+    <img id="reviewImage" class="review-image" alt="Guest review">
+    <button class="review-arrow right" id="reviewNext" aria-label="Next review">&#8594;</button>
+  </div>
+</section>
+
 <footer>
   Questions before you request dates? Reach out directly — see the buttons above once you've picked your dates.
 </footer>
@@ -360,7 +401,7 @@ const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1hrSLtF1wiP
 // the same filename. It gets added to every photo URL as "?v=2", which is a
 // brand new URL as far as caching is concerned, forcing everyone to fetch
 // the new file. You do NOT need to rename your actual image files.
-const PHOTO_CACHE_BUST = "7";
+const PHOTO_CACHE_BUST = "8";
 function withCacheBust(src){ return `${src}?v=${PHOTO_CACHE_BUST}`; }
 
 // ---- YOUR PHOTOS ----
@@ -404,6 +445,15 @@ const PHOTOS_LOCATION = [
   "location-4.jpg",
   "location-5.jpg",
   "location-6.jpg"
+];
+
+// ---- REVIEW CAROUSEL IMAGES ----
+// The three images shown in the review carousel at the bottom of the page.
+// Fixed size 700x265px — add/remove filenames here if that ever changes.
+const REVIEW_IMAGES = [
+  "review-1.gif",
+  "review-2.gif",
+  "review-3.gif"
 ];
 
 // ---- PRICING RULES (guests / VAT / cleaning) ----
@@ -1060,6 +1110,21 @@ document.getElementById('galleryPrev2').addEventListener('click', ()=> showPhoto
 document.getElementById('galleryNext2').addEventListener('click', ()=> showPhoto2(galleryIndex2 + 1));
 
 initGallery2();
+
+// ---- Review carousel (bottom of page) ----
+// Deliberately simple: fixed 3-image list, one image at a time, no
+// thumbnails, infinite loop in both directions.
+let reviewIndex = 0;
+
+function showReviewImage(i){
+  reviewIndex = ((i % REVIEW_IMAGES.length) + REVIEW_IMAGES.length) % REVIEW_IMAGES.length;
+  document.getElementById('reviewImage').src = withCacheBust(REVIEW_IMAGES[reviewIndex]);
+}
+
+document.getElementById('reviewPrev').addEventListener('click', ()=> showReviewImage(reviewIndex - 1));
+document.getElementById('reviewNext').addEventListener('click', ()=> showReviewImage(reviewIndex + 1));
+
+showReviewImage(0);
 </script>
 </body>
 </html>
